@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/dankraw/ssh-aliases/compiler"
@@ -68,25 +69,26 @@ func TestShouldReadFilesWithImportedConfigs(t *testing.T) {
 
 	// then
 	assert.NoError(t, err)
+	fmt.Printf("%+v\n", ctx)
 	assert.Equal(t, compiler.InputContext{
 		Sources: []compiler.ContextSource{
 			{
 				SourceName: "test_fixtures/valid/importing_configs/example.hcl",
 				Hosts: []compiler.ExpandingHostConfig{{
-					AliasName:       "abc",
-					HostnamePattern: "servcice-abc.example.com",
-					AliasTemplate:   "abc",
-					Config: compiler.ConfigProperties{{
-						Key:   "Additional",
-						Value: "extension",
-					}, {
-						Key:   "Another",
-						Value: "one",
-					}, {
-						Key:   "X",
-						Value: "y",
-					}},
-				}, {
+					// 	AliasName:       "abc",
+					// 	HostnamePattern: "servcice-abc.example.com",
+					// 	AliasTemplate:   "abc",
+					// 	Config: compiler.ConfigProperties{{
+					// 		Key:   "Additional",
+					// 		Value: "extension",
+					// 	}, {
+					// 		Key:   "Another",
+					// 		Value: "one",
+					// 	}, {
+					// 		Key:   "X",
+					// 		Value: "y",
+					// 	}},
+					// }, {
 					AliasName:       "def",
 					HostnamePattern: "servcice-def.example.com",
 					AliasTemplate:   "def",
@@ -99,6 +101,9 @@ func TestShouldReadFilesWithImportedConfigs(t *testing.T) {
 					}, {
 						Key:   "SomeProp",
 						Value: 123,
+					}, {
+						Key:   "This",
+						Value: "happens",
 					}},
 				}},
 			},

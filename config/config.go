@@ -66,15 +66,60 @@ func interpolatedConfigProps(variables *variablesMap, input []map[string]interfa
 	return h
 }
 
-func (c *rawDirContext) getConfigPropertiesMap(variables *variablesMap) configPropertiesMap {
-	propsMap := configPropertiesMap{}
-	for _, s := range c.RawSources {
-		for name, r := range s.RawContext.RawConfigs {
-			interpolated := interpolatedConfigProps(variables, r)
-			propsMap[name] = interpolated.toSortedCompilerProperties()
+func (c configProps) evaluteConfigImports(propsMap map[string]configProps, evaluatedImports map[string]struct{}) (configProps, error) {
+	evaluated := configProps{}
+	for key, value := range c {
+		if key == "_import" {
+			if importedStr, ok := value.(string); ok {
+				if _, alreadyEvaluated := evaluatedImports[importedStr]; alreadyEvaluated {
+					// fatal
+					return nil, fmt.Errorf("circular import in configs (%s imports %s, but %s was already evaluated)", "something", importedStr, importedStr)
+				}
+				evaluatedImports[importedStr] = struct{}{}
+				if imported, ok := propsMap[importedStr]; ok {
+					evaluatedImport, err := imported.evaluteConfigImports(propsMap, evaluatedImports)
+					if err != nil {
+						return nil, err
+					}
+					for k, v := range evaluatedImport {
+						evaluated[k] = v
+					}
+				} else {
+					return nil, fmt.Errof("trying to import %s, but such config does not exist", importedStr)
+				}
+			}
+		} else {
+			evaluated[key] = value
 		}
 	}
-	return propsMap
+	return evaluated, nil
+}
+
+func (c *rawDirContext) getConfigPropertiesMap(variables *variablesMap) (configPropertiesMap, error) {
+	propsMap := map[string]configProps{}
+	for _, s := range c.RawSources {
+		for name, r := range s.RawContext.RawConfigs {
+			// interpolated := interpolatedConfigProps(variables, r)
+			// propsMap[name] = interpolated.toSortedCompilerProperties()
+			propsMap[name] = interpolatedConfigProps(variables, r)
+		}
+	}
+	evaluated := map[string]configProps{}
+	for name, props := range propsMap {
+		evaluatedConfig, err := props.evaluteConfigImports(propsMap, map[string]struct{}{})
+		if err != nil {
+			return nil, err
+		}
+		evaluated[name] = evaluatedConfig
+		// should retry with configs that still have an import
+
+		// watch for circular imports
+	}
+	configPropsMap := configPropertiesMap{}
+	for name, props := range evaluated {
+		configPropsMap[name] = props.toSortedCompilerProperties()
+	}
+	return configPropsMap, nil
 }
 
 type configPropertiesMap map[string]compiler.ConfigProperties
@@ -127,7 +172,7 @@ func (c *rawDirContext) toCompilerInputContext() (compiler.InputContext, error) 
 	if err != nil {
 		return compiler.InputContext{}, err
 	}
-	propsMap := c.getConfigPropertiesMap(&variables)
+	propsMap, err := c.getConfigPropertiesMap(&variables)
 	if err != nil {
 		return compiler.InputContext{}, err
 	}

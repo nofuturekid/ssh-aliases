@@ -1,11 +1,11 @@
-host "abc" {
-  hostname = "servcice-abc.example.com"
-  alias = "abc"
-  config {
-    _import = "root"
-    x = "y"
-  }
-}
+// host "abc" {
+//   hostname = "servcice-abc.example.com"
+//   alias = "abc"
+//   config {
+//     _import = "root"
+//     x = "y"
+//   }
+// }
 
 host "def" {
   hostname = "servcice-def.example.com"
@@ -15,7 +15,12 @@ host "def" {
 
 config "def_conf" {
   some_prop = 123
-  _import = "root"
+  _import = "intermediate"
+}
+
+config "intermediate" {
+    _import = "root"
+    this = "happens"
 }
 
 config "root" {

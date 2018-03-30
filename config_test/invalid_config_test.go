@@ -52,3 +52,14 @@ func TestShouldThrowErrorOnValueRedeclaration(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "variable redeclaration: abc.def", err.Error())
 }
+
+func TestShouldThrowErrorOnCircularImports(t *testing.T) {
+	t.Parallel()
+
+	// when
+	_, err := reader.ReadConfigs("./test_fixtures/invalid/circular_imports")
+
+	// then
+	assert.Error(t, err)
+	assert.Equal(t, "variable redeclaration: abc.def", err.Error())
+}
